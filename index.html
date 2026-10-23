@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#dcfadb" />
+  <meta name="description" content="누구나 편하게 방문할 수 있는 우리 동네 무장애 상점을 찾아보세요." />
+  <title>모두의마을 | 우리 동네 무장애 상점</title>
+  <!-- Leaflet: 실제 조작 가능한 지도를 위한 오픈소스 라이브러리 -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <style>
+    :root{
+      --green-900:#164d36;
+      --green-800:#1f5b3a;
+      --green-700:#2f7a4f;
+      --green-600:#4d9868;
+      --mint:#dcfadb;
+      --mint-strong:#c8efc2;
+      --sky:#d7e9fd;
+      --butter:#fff3c4;
+      --cream:#fbf8ee;
+      --paper:#fffefa;
+      --ink:#223b2e;
+      --muted:#718176;
+      --line:#e8eee4;
+      --shadow:0 8px 24px rgba(31,91,58,.09);
+      --shadow-hover:0 14px 32px rgba(31,91,58,.15);
+      --radius-xl:28px;
+      --radius-lg:20px;
+      --radius-md:14px;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:linear-gradient(180deg,#e9f8f0 0,#fbf8ee 450px,#fffefa 100%);color:var(--ink);font-family:Pretendard,"Noto Sans KR","Malgun Gothic",Arial,sans-serif;line-height:1.6}
+    button,input,select,textarea{font:inherit}
+    button,a{-webkit-tap-highlight-color:transparent}
+    a{color:inherit;text-decoration:none}
+    button{cursor:pointer}
+    img{max-width:100%;display:block}
+    .skip-link{position:absolute;left:-9999px;top:8px;background:#fff;padding:10px 14px;z-index:10000;border-radius:10px}
+    .skip-link:focus{left:12px}
+    .site-header{position:sticky;top:0;z-index:1000;background:rgba(255,254,250,.92);backdrop-filter:blur(14px);border-bottom:1px solid rgba(221,233,218,.8)}
+    .header-inner{max-width:1280px;margin:auto;padding:12px 26px;min-height:72px;display:flex;align-items:center;gap:24px}
+    .brand{display:flex;align-items:center;gap:9px;flex-shrink:0;color:var(--green-900);font-weight:900;font-size:1.22rem;letter-spacing:-.04em}
+    .brand-mark{width:34px;height:34px;color:var(--green-800)}
+    .main-nav{display:flex;justify-content:center;align-items:center;gap:clamp(12px,2.4vw,34px);margin:0 auto;font-size:.9rem;font-weight:700;color:#506e5b}
+    .nav-link{border:0;background:transparent;color:inherit;padding:10px 2px;position:relative;white-space:nowrap}
+    .nav-link::after{content:"";position:absolute;height:2px;background:var(--green-700);left:0;right:100%;bottom:3px;transition:right .2s}
+    .nav-link:hover::after,.nav-link.active::after{right:0}
+    .nav-link.active{color:var(--green-900)}
+    .header-actions{display:flex;align-items:center;gap:8px}
+    .icon-btn{width:40px;height:40px;border:1px solid transparent;background:transparent;color:var(--green-800);border-radius:50%;display:grid;place-items:center;transition:.2s}
+    .icon-btn:hover{background:var(--mint)}
+    .pill-btn{border:0;border-radius:999px;background:var(--green-800);color:#fff;font-weight:750;padding:10px 16px;white-space:nowrap;transition:.2s}
+    .pill-btn:hover{background:var(--green-900);transform:translateY(-1px)}
+    .menu-toggle{display:none;border:1px solid var(--line);border-radius:999px;background:white;color:var(--green-800);padding:8px 13px;font-weight:700}
+    main{max-width:1280px;padding:24px 26px 50px;margin:auto;min-height:70vh}
+    .page{display:none;animation:fade-in .28s ease both}
+    .page.active{display:block}
+    @keyframes fade-in{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+    .hero{min-height:400px;display:grid;grid-template-columns:.86fr 1.14fr;gap:18px;align-items:stretch;position:relative;overflow:hidden;border-radius:var(--radius-xl);background:linear-gradient(125deg,#fff3c8 0%,#e2f8de 47%,#d7f0fb 100%);box-shadow:var(--shadow);padding:48px 42px 0}
+    .hero-copy{align-self:center;padding-bottom:52px;position:relative;z-index:2;max-width:520px}
+    .eyebrow{display:inline-flex;align-items:center;gap:7px;color:var(--green-700);font-size:.79rem;font-weight:850;letter-spacing:.06em;margin-bottom:12px}
+    .eyebrow-dot{width:8px;height:8px;background:#f4bd4b;border-radius:50%;box-shadow:0 0 0 5px rgba(244,189,75,.18)}
+    h1,h2,h3,p{margin-top:0}
+    .hero h1{font-size:clamp(2rem,4vw,3.15rem);line-height:1.23;letter-spacing:-.06em;color:var(--green-900);margin:0 0 18px;font-weight:900}
+    .hero-copy p{font-size:1rem;line-height:1.85;color:#466552;max-width:440px;margin:0 0 24px}
+    .primary-btn{display:inline-flex;align-items:center;justify-content:center;gap:11px;background:var(--green-800);color:#fff;border:0;border-radius:999px;padding:13px 21px;font-weight:800;box-shadow:0 7px 18px rgba(31,91,58,.16);transition:transform .2s,background .2s}
+    .primary-btn:hover{transform:translateY(-2px);background:var(--green-900)}
+    .secondary-btn{border:1px solid #cddfd0;background:#fff;color:var(--green-800);border-radius:999px;padding:12px 18px;font-weight:800;transition:.2s}
+    .secondary-btn:hover{background:var(--mint)}
+    .hero-art{position:relative;align-self:stretch;min-height:325px;margin-right:-34px;overflow:hidden}
+    .hero-tagline{position:absolute;right:36px;top:4px;text-align:right;color:var(--green-800);font-weight:850;line-height:1.5;z-index:2}
+    .hero-art svg{position:absolute;inset:auto 0 0;width:100%;height:100%;min-height:300px}
+    .shortcut-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:22px}
+    .shortcut-card{display:flex;flex-direction:column;align-items:center;text-align:center;background:rgba(255,255,255,.94);border:1px solid rgba(234,240,229,.9);border-radius:22px;padding:23px 14px 20px;box-shadow:var(--shadow);transition:transform .2s,box-shadow .2s;min-height:148px}
+    .shortcut-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-hover)}
+    .shortcut-icon{width:53px;height:53px;border-radius:18px;display:grid;place-items:center;background:var(--mint);color:var(--green-800);margin-bottom:9px}
+    .shortcut-card:nth-child(2) .shortcut-icon{background:var(--butter)}
+    .shortcut-card:nth-child(3) .shortcut-icon{background:var(--sky)}
+    .shortcut-card:nth-child(4) .shortcut-icon{background:#e7f3df}
+    .shortcut-card strong{color:var(--green-900);font-size:1.02rem}
+    .shortcut-card small{margin-top:4px;color:var(--muted);font-size:.81rem}
+    .section-head{display:flex;align-items:end;justify-content:space-between;gap:20px;margin:10px 0 22px}
+    .section-head h1,.section-head h2{margin:0;color:var(--green-900);font-size:clamp(1.55rem,3vw,2.15rem);line-height:1.25;letter-spacing:-.045em}
+    .section-head p{margin:8px 0 0;color:var(--muted);font-size:.93rem}
+    .section-heading-small{font-size:.78rem;color:var(--green-700);font-weight:850;letter-spacing:.08em;margin-bottom:6px}
+    .filter-row{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin:18px 0}
+    .filter-chip{background:#f2f7ed;border:1px solid transparent;color:#56725e;border-radius:999px;padding:9px 17px;font-size:.88rem;font-weight:750;transition:.2s;white-space:nowrap}
+    .filter-chip:hover{border-color:#bdd8c0;background:#e6f5e3}
+    .filter-chip.active{background:var(--green-700);color:#fff;box-shadow:0 4px 12px rgba(47,122,79,.16)}
+    .map-layout{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(290px,.85fr);gap:18px;align-items:stretch}
+    .panel{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow);overflow:hidden}
+    .map-panel{position:relative;min-height:500px;padding:10px}
+    #map{width:100%;height:480px;border-radius:15px;background:#e5f0e7;z-index:1}
+    .map-note{position:absolute;left:22px;bottom:20px;z-index:400;background:rgba(255,255,255,.94);border:1px solid #e7eee4;border-radius:11px;padding:8px 11px;font-size:.72rem;color:#627466;max-width:80%;box-shadow:0 3px 12px rgba(0,0,0,.05)}
+    .leaflet-container{font-family:inherit}
+    .leaflet-popup-content-wrapper{border-radius:14px}
+    .leaflet-popup-content{margin:12px 14px;font-family:inherit}
+    .map-pin{width:34px;height:34px;border-radius:50% 50% 50% 8px;transform:rotate(-45deg);border:3px solid white;box-shadow:0 4px 10px rgba(20,77,54,.3);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px}
+    .map-pin span{transform:rotate(45deg)}
+    .side-list{padding:18px;display:flex;flex-direction:column;min-height:500px}
+    .side-list-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:13px}
+    .side-list-head strong{font-size:.94rem;color:var(--green-900)}
+    .sort-select{border:1px solid var(--line);background:white;border-radius:999px;padding:7px 10px;color:var(--muted);font-size:.78rem;max-width:125px}
+    .store-list{display:flex;flex-direction:column;gap:10px;overflow:auto;max-height:420px;padding:1px 4px 3px 1px}
+    .store-row{display:grid;grid-template-columns:78px minmax(0,1fr);gap:12px;text-align:left;width:100%;border:1px solid #edf1e9;background:#fff;border-radius:15px;padding:9px;transition:.2s;color:inherit}
+    .store-row:hover{border-color:#b9dabb;box-shadow:0 5px 15px rgba(31,91,58,.08);transform:translateY(-1px)}
+    .store-thumb{height:77px;border-radius:10px;background:linear-gradient(135deg,#d7e9fd,#dcfadb);display:grid;place-items:center;color:var(--green-800);overflow:hidden;position:relative}
+    .store-thumb img{width:100%;height:100%;object-fit:cover}
+    .store-thumb .thumb-icon{font-size:1.7rem;filter:drop-shadow(0 2px 2px rgba(0,0,0,.07))}
+    .store-info{min-width:0;align-self:center}
+    .store-info strong{display:block;color:var(--green-900);font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .store-info .category-line{display:block;color:var(--muted);font-size:.73rem;margin-top:2px}
+    .tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+    .tag{display:inline-flex;align-items:center;border-radius:999px;background:#e8f6e5;color:#3d8053;padding:3px 8px;font-size:.68rem;font-weight:800;line-height:1.5}
+    .tag.blue{background:#e9f2fd;color:#4677aa}
+    .tag.yellow{background:#fff5d7;color:#907126}
+    .store-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+    .store-card{position:relative;background:#fff;border:1px solid var(--line);border-radius:19px;overflow:hidden;box-shadow:0 5px 16px rgba(31,91,58,.05);transition:transform .2s,box-shadow .2s;cursor:pointer}
+    .store-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-hover)}
+    .store-card-image{height:165px;background:linear-gradient(135deg,#d7e9fd,#dcfadb);position:relative;overflow:hidden;display:grid;place-items:center}
+    .store-card-image img{width:100%;height:100%;object-fit:cover;transition:transform .4s}
+    .store-card:hover .store-card-image img{transform:scale(1.04)}
+    .photo-placeholder{display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--green-800);font-size:.82rem;font-weight:700}
+    .favorite-btn{position:absolute;right:10px;top:10px;width:34px;height:34px;border:0;border-radius:50%;background:rgba(255,255,255,.95);color:#7d8c80;display:grid;place-items:center;box-shadow:0 2px 9px rgba(0,0,0,.07)}
+    .favorite-btn.saved{color:#e77b80}
+    .store-card-body{padding:15px 16px 17px}
+    .store-card-top{display:flex;align-items:start;justify-content:space-between;gap:8px}
+    .store-card h3{margin:0;color:var(--green-900);font-size:1rem;letter-spacing:-.025em}
+    .store-card .distance{font-size:.72rem;color:var(--muted);white-space:nowrap}
+    .store-card .store-desc{font-size:.8rem;color:var(--muted);margin:6px 0 10px;min-height:2.5em}
+    .search-box{display:flex;align-items:center;gap:9px;border:1px solid #dfe8df;background:#fff;border-radius:999px;padding:10px 14px;min-width:min(100%,290px)}
+    .search-box input{border:0;outline:0;min-width:0;width:100%;background:transparent;color:var(--ink)}
+    .search-box:focus-within{border-color:var(--green-600);box-shadow:0 0 0 3px rgba(77,152,104,.12)}
+    .empty-state{padding:42px 20px;text-align:center;color:var(--muted);background:#fff;border:1px dashed #d6e5d8;border-radius:18px}
+    .empty-state .big{font-size:2rem;margin-bottom:8px}
+    .content-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);padding:25px;box-shadow:var(--shadow)}
+    .about-hero{display:grid;grid-template-columns:1fr 1fr;gap:25px;align-items:center;background:linear-gradient(135deg,#f8f4d9,#e4f7df);border-radius:var(--radius-xl);padding:36px;margin-bottom:22px;overflow:hidden}
+    .about-hero h1{font-size:clamp(1.8rem,4vw,2.6rem);color:var(--green-900);line-height:1.3;letter-spacing:-.05em;margin-bottom:13px}
+    .about-hero p{color:#4b6956;max-width:560px}
+    .about-art{min-height:210px;display:grid;place-items:center}
+    .about-art svg{width:100%;max-height:260px}
+    .about-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    .about-item{background:#f8fbf4;border-radius:17px;padding:22px}
+    .about-item .symbol{width:44px;height:44px;border-radius:14px;background:#e1f2d9;display:grid;place-items:center;color:var(--green-800);margin-bottom:12px}
+    .about-item h3{margin:0 0 6px;color:var(--green-900);font-size:1rem}
+    .about-item p{color:var(--muted);font-size:.88rem;margin:0}
+    .detail-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(330px,.93fr);gap:22px}
+    .detail-gallery{display:grid;grid-template-columns:1.6fr 1fr;grid-template-rows:190px 115px;gap:10px}
+    .detail-main-photo{grid-row:span 2;border-radius:18px;overflow:hidden;background:linear-gradient(135deg,#d7e9fd,#dcfadb);display:grid;place-items:center}
+    .detail-small-photo{border-radius:15px;overflow:hidden;background:linear-gradient(135deg,#fff3c4,#dff5d8);display:grid;place-items:center}
+    .detail-gallery img{width:100%;height:100%;object-fit:cover}
+    .detail-title-row{display:flex;align-items:start;gap:12px;flex-wrap:wrap}
+    .detail-title-row h1{font-size:clamp(1.7rem,3vw,2.3rem);letter-spacing:-.05em;color:var(--green-900);margin:0}
+    .detail-category{color:var(--muted);margin:7px 0 12px;font-size:.91rem}
+    .detail-desc{color:#5e7164;font-size:.93rem}
+    .feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:17px 0}
+    .feature{border:1px solid #e9efe6;border-radius:15px;padding:12px 8px;text-align:center;background:#fff}
+    .feature-icon{width:38px;height:38px;border-radius:12px;background:#eef8e9;color:var(--green-800);display:grid;place-items:center;margin:0 auto 7px}
+    .feature strong{display:block;color:var(--green-900);font-size:.78rem}
+    .feature small{display:block;color:var(--muted);font-size:.72rem;margin-top:3px}
+    .detail-actions{display:flex;flex-wrap:wrap;gap:9px;margin:17px 0 21px}
+    .detail-tabs{display:flex;gap:19px;overflow:auto;border-bottom:1px solid var(--line);margin:23px 0 17px}
+    .detail-tab{background:none;border:0;padding:12px 2px;color:var(--muted);font-weight:800;white-space:nowrap;border-bottom:2px solid transparent}
+    .detail-tab.active{color:var(--green-800);border-color:var(--green-800)}
+    .tab-panel{display:none;color:#566b5d;font-size:.91rem}
+    .tab-panel.active{display:block;animation:fade-in .2s ease}
+    .info-list{display:grid;grid-template-columns:115px 1fr;gap:11px 14px;margin:0}
+    .info-list dt{color:var(--muted)}.info-list dd{margin:0;color:var(--ink);font-weight:650}
+    .note-box{padding:15px 17px;background:#f5faef;border-radius:14px;border:1px solid #e7f1de;color:#53715b;font-size:.86rem}
+    .site-footer{max-width:1280px;margin:0 auto;padding:0 26px 34px;color:#728276;font-size:.8rem}
+    .footer-inner{border-top:1px solid #e5ece2;padding-top:20px;display:flex;justify-content:space-between;gap:15px;align-items:center}
+    .footer-brand{font-weight:850;color:var(--green-800)}
+    .demo-disclaimer{background:#fff9e6;border:1px solid #f5e6b2;color:#7b6834;border-radius:12px;padding:10px 13px;font-size:.78rem;margin:12px 0 18px}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(18,40,28,.45);z-index:3000;padding:20px;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+    .modal-backdrop.open{display:flex;animation:fade-in .18s ease}
+    .modal{background:#fffefa;max-width:720px;width:100%;max-height:min(90vh,900px);overflow:auto;border-radius:24px;padding:24px;box-shadow:0 25px 80px rgba(12,44,26,.25);position:relative}
+    .modal-close{position:absolute;right:16px;top:16px;width:38px;height:38px;display:grid;place-items:center;border:1px solid var(--line);background:#fff;border-radius:50%;color:var(--green-800);z-index:2}
+    .modal h2{color:var(--green-900);letter-spacing:-.04em;margin:0 45px 4px 0}
+    .modal p{color:var(--muted);font-size:.9rem}
+    .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:var(--green-900);color:#fff;padding:12px 17px;border-radius:999px;z-index:5000;box-shadow:var(--shadow);font-size:.88rem;transition:.25s;max-width:calc(100% - 32px);text-align:center}
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+    .mobile-bottom-nav{display:none}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    @media(max-width:1000px){
+      .header-inner{gap:14px;padding:12px 18px}.main-nav{gap:16px}.header-actions .pill-btn{display:none}
+      main{padding:20px 18px 42px}.hero{padding:35px 27px 0;grid-template-columns:.9fr 1.1fr}.hero-art{margin-right:-24px}
+      .map-layout{grid-template-columns:minmax(0,1.3fr) minmax(265px,.9fr)}.store-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .site-footer{padding-left:18px;padding-right:18px}
+    }
+    @media(max-width:760px){
+      .header-inner{min-height:64px;padding:9px 15px;justify-content:space-between}.brand{font-size:1.12rem}.brand-mark{width:30px;height:30px}
+      .menu-toggle{display:block}.main-nav{display:none;position:absolute;left:12px;right:12px;top:calc(100% + 5px);margin:0;padding:13px;background:#fff;border:1px solid var(--line);border-radius:17px;box-shadow:var(--shadow);flex-direction:column;align-items:stretch;gap:2px}
+      .main-nav.open{display:flex;animation:fade-in .18s ease}.nav-link{text-align:left;padding:12px;border-radius:10px}.nav-link.active{background:#edf8e9}.nav-link::after{display:none}
+      .header-actions{gap:2px}.header-actions .icon-btn{width:36px;height:36px}
+      main{padding:15px 13px 38px}.hero{grid-template-columns:1fr;padding:31px 23px 0;min-height:auto;border-radius:24px;gap:0}.hero-copy{padding-bottom:8px}.hero h1{font-size:clamp(2rem,8vw,2.7rem)}.hero-copy p{font-size:.93rem}.hero-art{min-height:250px;margin:0 -21px}.hero-art svg{min-height:260px}.hero-tagline{right:24px;top:8px;font-size:.85rem}
+      .shortcut-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin-top:13px}.shortcut-card{min-height:135px;padding:17px 10px;border-radius:18px}.shortcut-icon{height:46px;width:46px;border-radius:15px}.shortcut-card small{font-size:.75rem}
+      .section-head{align-items:start;flex-direction:column;margin:7px 0 16px;gap:12px}.section-head .search-box{width:100%}.map-layout{grid-template-columns:1fr}.map-panel{min-height:365px;padding:7px}#map{height:350px}.map-note{left:15px;bottom:14px}.side-list{min-height:auto;padding:14px}.store-list{max-height:none}.store-row{grid-template-columns:74px minmax(0,1fr)}
+      .store-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.store-card{border-radius:15px}.store-card-image{height:120px}.store-card-body{padding:12px}.store-card h3{font-size:.91rem}.store-card .store-desc{font-size:.75rem;min-height:0}.store-card .distance{display:none}.store-card .tags{gap:4px}.tag{font-size:.64rem;padding:3px 6px}
+      .about-hero{grid-template-columns:1fr;padding:25px 22px;gap:0}.about-art{min-height:150px;max-height:200px}.about-grid{grid-template-columns:1fr;gap:11px}.about-item{padding:17px}
+      .detail-layout{grid-template-columns:1fr}.detail-gallery{grid-template-rows:160px 90px}.feature-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.detail-tabs{gap:17px}.content-card{padding:17px}.info-list{grid-template-columns:96px 1fr}
+      .footer-inner{flex-direction:column;align-items:flex-start;gap:7px}.mobile-bottom-nav{position:fixed;display:flex;bottom:0;left:0;right:0;z-index:900;background:rgba(255,254,250,.96);backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:7px 9px calc(7px + env(safe-area-inset-bottom));justify-content:space-around}.bottom-link{display:flex;flex-direction:column;align-items:center;gap:2px;color:#6b8272;font-size:.66rem;min-width:56px;border:0;background:transparent;padding:3px 5px}.bottom-link svg{width:20px;height:20px}.bottom-link.active{color:var(--green-800);font-weight:850}.site-footer{padding-bottom:86px}
+      .modal-backdrop{padding:10px}.modal{padding:20px 16px;border-radius:20px}.modal-close{right:12px;top:12px}
+    }
+    @media(max-width:400px){.store-grid{grid-template-columns:1fr}.store-card-image{height:160px}.filter-chip{padding:8px 12px;font-size:.82rem}.hero{padding-left:19px;padding-right:19px}.feature strong{font-size:.72rem}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+  </style>
+</head>
+<body>
+<a class="skip-link" href="#main">본문 바로가기</a>
+<header class="site-header">
+  <div class="header-inner">
+    <a href="#home" class="brand" aria-label="모두의마을 홈" data-route="home">
+      <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true"><path d="M4 18 20 4 36 18v17H4Z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="M15 35V23h10v12M10 18l10-9 10 9" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></svg>
+      <span>모두의마을</span>
+    </a>
+    <button class="menu-toggle" id="menuToggle" aria-expanded="false" aria-controls="mainNav">메뉴 ☰</button>
+    <nav class="main-nav" id="mainNav" aria-label="주요 메뉴">
+      <button class="nav-link active" data-route="home">홈</button>
+      <button class="nav-link" data-route="map">지도보기</button>
+      <button class="nav-link" data-route="stores">상점찾기</button>
+      <button class="nav-link" data-route="guide">이용안내</button>
+      <button class="nav-link" data-route="about">프로젝트 소개</button>
+    </nav>
+    <div class="header-actions">
+      <button class="icon-btn" id="headerSearch" aria-label="상점 검색" title="상점 검색"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg></button>
+      <button class="icon-btn" id="favoritesButton" aria-label="즐겨찾기 상점" title="즐겨찾기 상점"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M20.8 8.8c0 5.1-8.8 10.1-8.8 10.1S3.2 13.9 3.2 8.8A4.7 4.7 0 0 1 12 6.2a4.7 4.7 0 0 1 8.8 2.6Z"/></svg></button>
+      <button class="pill-btn" data-route="about">프로젝트 소개 <span aria-hidden="true">↗</span></button>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <!-- HOME -->
+  <section class="page active" id="page-home" aria-labelledby="home-title">
+    <div class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="eyebrow-dot"></span> BARRIER-FREE MAP</div>
+        <h1 id="home-title">누구나 편하게<br>방문할 수 있는<br>우리 동네 무장애 상점</h1>
+        <p>모두의마을은 장애인, 노인, 어린이, 유아차 이용자 등 모든 사람이 편하게 이용할 수 있는 무장애 상점을 소개하는 지도 서비스입니다.</p>
+        <button class="primary-btn" data-route="map">지도 둘러보기 <span aria-hidden="true">→</span></button>
+      </div>
+      <div class="hero-art" aria-label="언덕과 집들이 있는 따뜻한 마을 일러스트" role="img">
+        <p class="hero-tagline">모두를 위한<br>더 나은 일상 ☀</p>
+        <svg viewBox="0 0 660 390" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+          <defs><linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d6f0fb" stop-opacity=".9"/><stop offset="1" stop-color="#eff9dd" stop-opacity=".1"/></linearGradient><linearGradient id="hillGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c9edbb"/><stop offset="1" stop-color="#9ed89f"/></linearGradient></defs>
+          <rect width="660" height="390" fill="url(#skyGrad)" opacity=".65"/>
+          <g fill="#fff" opacity=".68"><ellipse cx="356" cy="104" rx="42" ry="19"/><ellipse cx="383" cy="94" rx="30" ry="27"/><ellipse cx="414" cy="107" rx="38" ry="17"/><ellipse cx="510" cy="139" rx="44" ry="17"/><ellipse cx="535" cy="128" rx="29" ry="23"/><ellipse cx="562" cy="140" rx="35" ry="15"/></g>
+          <g fill="#a8d9ef" opacity=".9"><rect x="405" y="149" width="30" height="94" rx="2"/><rect x="441" y="120" width="35" height="123" rx="2"/><rect x="482" y="162" width="27" height="81" rx="2"/><rect x="515" y="139" width="34" height="104" rx="2"/><rect x="554" y="177" width="26" height="66" rx="2"/><rect x="585" y="153" width="29" height="90" rx="2"/></g>
+          <g fill="#eaf8fa" opacity=".8"><path d="M414 167h5v8h-5zm13 0h5v8h-5zm-13 17h5v8h-5zm13 0h5v8h-5zM450 139h5v8h-5zm14 0h5v8h-5zm-14 17h5v8h-5zm14 0h5v8h-5zM490 178h5v8h-5zm0 18h5v8h-5zm33-27h5v8h-5zm14 0h5v8h-5zm-14 17h5v8h-5z"/></g>
+          <path d="M0 250C81 204 137 223 214 245S371 259 450 224s140-12 210-47v213H0Z" fill="#c9edbd"/>
+          <path d="M0 287c90-45 192-33 271-7s192 11 255-20 93-18 134-29v159H0Z" fill="url(#hillGrad)"/>
+          <path d="M0 331c93-24 154-12 243 8s202 11 281-11 101-16 136-19v81H0Z" fill="#a7dfa0"/>
+          <ellipse cx="343" cy="340" rx="116" ry="22" fill="#c5e9f3" opacity=".8"/>
+          <g transform="translate(92 204)"><rect x="0" y="35" width="86" height="61" rx="3" fill="#fff5db"/><path d="M-9 38 43 0l52 38Z" fill="#e8a36b"/><rect x="13" y="53" width="18" height="19" rx="2" fill="#b9dfec"/><rect x="55" y="53" width="18" height="19" rx="2" fill="#b9dfec"/><rect x="35" y="67" width="17" height="29" fill="#7bbd89"/><path d="M-5 96h96" stroke="#fff" stroke-width="5" stroke-linecap="round"/></g>
+          <g transform="translate(250 234)"><rect x="0" y="25" width="72" height="65" rx="3" fill="#fff"/><path d="M-7 27 36 0l43 27Z" fill="#8bc57e"/><rect x="12" y="42" width="16" height="17" fill="#b9dfec"/><rect x="43" y="42" width="16" height="17" fill="#b9dfec"/><rect x="29" y="63" width="15" height="27" fill="#e7b777"/></g>
+          <g transform="translate(512 230)"><rect x="0" y="20" width="75" height="63" rx="3" fill="#fff4d7"/><path d="M-7 23 37 0l45 23Z" fill="#eaa18e"/><rect x="12" y="38" width="16" height="17" fill="#b9dfec"/><rect x="46" y="38" width="16" height="17" fill="#b9dfec"/><rect x="30" y="60" width="14" height="23" fill="#7bbd89"/></g>
+          <g fill="#4a9b62"><circle cx="65" cy="296" r="20"/><circle cx="81" cy="283" r="22"/><circle cx="97" cy="302" r="18"/><rect x="78" y="301" width="8" height="37" fill="#9c7954"/><circle cx="604" cy="292" r="23"/><circle cx="624" cy="307" r="18"/><rect x="610" y="306" width="8" height="39" fill="#9c7954"/><circle cx="204" cy="296" r="18"/><circle cx="218" cy="284" r="17"/><rect x="207" y="300" width="7" height="30" fill="#9c7954"/></g>
+          <g transform="translate(360 295)"><circle cx="0" cy="0" r="10" fill="#eaa18e"/><path d="M-10 11h21l7 31h-34z" fill="#fff"/><path d="M-7 42-12 63m25-21 8 21" stroke="#457e8e" stroke-width="7" stroke-linecap="round"/><path d="m-10 18-13 21m34-22 10 14" stroke="#eaa18e" stroke-width="6" stroke-linecap="round"/></g>
+          <g transform="translate(425 316)"><circle cx="0" cy="0" r="8" fill="#d58e69"/><path d="M-8 9h16l6 24h-28z" fill="#f6c85f"/><path d="m-5 33-5 17m17-17 6 17" stroke="#567f69" stroke-width="5" stroke-linecap="round"/></g>
+          <path d="M0 360c100-22 167-20 245 2" stroke="#fff7d9" stroke-width="12" stroke-linecap="round" fill="none" opacity=".9"/>
+        </svg>
+      </div>
+    </div>
+    <div class="shortcut-grid" aria-label="바로가기">
+      <button class="shortcut-card" data-route="map"><span class="shortcut-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></span><strong>상점 지도</strong><small>근처의 무장애 상점을 찾아보세요</small></button>
+      <button class="shortcut-card" data-route="stores"><span class="shortcut-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10h18l-2-6H5zM5 10v10h14V10M9 20v-6h6v6"/><path d="M3 10a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/></svg></span><strong>상점 찾기</strong><small>업종별로 쉽게 찾아보세요</small></button>
+      <button class="shortcut-card" data-route="guide"><span class="shortcut-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v5h4M10 13h6m-6 4h6"/><path d="m3 8 1.5 1.5L7 7"/></svg></span><strong>이용 안내</strong><small>접근성 정보를 확인하는 법</small></button>
+      <button class="shortcut-card" data-route="about"><span class="shortcut-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20v-2.3A5.7 5.7 0 0 1 8.2 12h1.6a5.7 5.7 0 0 1 5.7 5.7V20M17 4.5a3.5 3.5 0 0 1 0 6.8M18 13a4.6 4.6 0 0 1 3.5 4.5V20"/></svg></span><strong>프로젝트 소개</strong><small>모두의마을을 알아보세요</small></button>
+    </div>
+    <div style="margin-top:34px" class="section-head"><div><div class="section-heading-small">GOOD PLACES, GOOD STORIES</div><h2>우리 동네 추천 상점</h2><p>접근성 정보를 확인하고 나에게 맞는 장소를 찾아보세요.</p></div><button class="secondary-btn" data-route="stores">상점 더보기 →</button></div>
+    <div class="store-grid" id="homeStoreGrid"></div>
+  </section>
+
+  <!-- MAP -->
+  <section class="page" id="page-map" aria-labelledby="map-title">
+    <div class="section-head"><div><div class="section-heading-small">EXPLORE YOUR NEIGHBORHOOD</div><h1 id="map-title">무장애 상점 지도</h1><p>지도를 둘러보고, 필요한 접근성 정보를 갖춘 상점을 찾아보세요.</p></div><button class="secondary-btn" data-route="stores">목록으로 보기 ↗</button></div>
+    <div class="demo-disclaimer">안내: 현재 지도 위치와 일부 상점 정보·사진은 화면 확인을 위한 시안용 예시입니다. 실제 공개 전 조사한 주소, 좌표, 사진, 접근성 정보를 확인해 교체해 주세요.</div>
+    <div class="filter-row" id="mapFilters"></div>
+    <div class="map-layout">
+      <div class="panel map-panel"><div id="map" role="application" aria-label="무장애 상점 지도"></div><div class="map-note">ⓘ 지도 마커를 누르면 상점 정보를 볼 수 있어요.</div></div>
+      <aside class="panel side-list"><div class="side-list-head"><strong id="mapResultCount">주변 상점</strong><select class="sort-select" id="mapSort" aria-label="상점 정렬"><option value="recommended">추천순</option><option value="name">이름순</option></select></div><div class="store-list" id="mapStoreList"></div></aside>
+    </div>
+  </section>
+
+  <!-- STORES -->
+  <section class="page" id="page-stores" aria-labelledby="stores-title">
+    <div class="section-head"><div><div class="section-heading-small">FIND A PLACE FOR YOU</div><h1 id="stores-title">상점 찾기</h1><p>원하는 업종을 선택하고, 무장애 상점 정보를 찾아보세요.</p></div><label class="search-box"><span aria-hidden="true">⌕</span><input id="storeSearch" type="search" placeholder="상점명으로 검색하기" aria-label="상점명으로 검색하기" /></label></div>
+    <div class="demo-disclaimer">현재 상점 사진과 위치는 시안용 예시를 포함합니다. 실제 상점 정보를 입력한 뒤 공개해 주세요.</div>
+    <div class="filter-row" id="storeFilters"></div>
+    <div class="store-grid" id="storeGrid"></div>
+  </section>
+
+  <!-- GUIDE -->
+  <section class="page" id="page-guide" aria-labelledby="guide-title">
+    <div class="section-head"><div><div class="section-heading-small">HOW TO USE</div><h1 id="guide-title">이용 안내</h1><p>모두의마을에서 제공하는 접근성 정보를 읽는 방법을 안내합니다.</p></div></div>
+    <div class="content-card" style="margin-bottom:18px">
+      <h2 style="color:var(--green-900);font-size:1.25rem">접근성 정보는 이렇게 확인하세요</h2>
+      <p style="color:var(--muted)">상점마다 확인된 시설 정보가 다를 수 있어요. 방문 전에 필요한 항목을 살펴보고, 최신 정보가 필요한 경우 상점에 한 번 더 확인해 주세요.</p>
+      <div class="feature-grid">
+        <div class="feature"><div class="feature-icon">↗</div><strong>경사로·단차 없음</strong><small>출입구 진입 조건</small></div>
+        <div class="feature"><div class="feature-icon">⇥</div><strong>자동출입문</strong><small>출입문 이용 방식</small></div>
+        <div class="feature"><div class="feature-icon">P</div><strong>장애인 주차</strong><small>전용 주차구역 여부</small></div>
+        <div class="feature"><div class="feature-icon">WC</div><strong>개방화장실</strong><small>화장실 개방 여부</small></div>
+        <div class="feature"><div class="feature-icon">♿</div><strong>장애인화장실</strong><small>장애인화장실 여부</small></div>
+        <div class="feature"><div class="feature-icon">i</div><strong>미확인 정보</strong><small>아직 확인하지 않은 항목</small></div>
+      </div>
+    </div>
+    <div class="about-grid">
+      <div class="about-item"><div class="symbol">①</div><h3>상점을 찾아보세요</h3><p>지도에서 위치를 확인하거나 상점 찾기에서 업종과 이름으로 검색할 수 있어요.</p></div>
+      <div class="about-item"><div class="symbol">②</div><h3>필요한 항목을 살펴보세요</h3><p>상점 상세 페이지에서 출입구, 출입문, 주차, 화장실 정보를 확인해 주세요.</p></div>
+      <div class="about-item"><div class="symbol">③</div><h3>정보를 신중하게 이용해 주세요</h3><p>현장 상황은 달라질 수 있으며, 정보가 미확인인 경우 설치되지 않았다는 의미가 아닙니다.</p></div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section class="page" id="page-about" aria-labelledby="about-title">
+    <div class="about-hero">
+      <div><div class="eyebrow"><span class="eyebrow-dot"></span> ABOUT MODUUI MAEUL</div><h1 id="about-title">모두가 편하게<br>머무를 수 있는 마을을 위해</h1><p>모두의마을은 접근성이 좋은 상점을 발굴하고 소개해, 더 많은 사람이 자신에게 맞는 장소를 찾을 수 있도록 돕는 프로젝트입니다.</p><button class="primary-btn" data-route="map">상점 지도 둘러보기 →</button></div>
+      <div class="about-art" aria-hidden="true"><svg viewBox="0 0 460 260"><path d="M8 210C80 158 138 188 210 203s148 1 242-34v91H8Z" fill="#c6e9bb"/><path d="M8 233c85-30 151-9 227 8s143-3 217-17v36H8Z" fill="#a7dc9d"/><g transform="translate(90 90)"><rect x="0" y="44" width="80" height="70" fill="#fff8e4"/><path d="M-10 47 40 5l50 42Z" fill="#e6ab75"/><rect x="15" y="59" width="18" height="20" fill="#b7dfea"/><rect x="47" y="59" width="18" height="20" fill="#b7dfea"/><rect x="32" y="87" width="17" height="27" fill="#78b77c"/></g><g transform="translate(280 110)"><rect x="0" y="30" width="68" height="60" fill="#fff"/><path d="M-8 32 34 0l42 32Z" fill="#8ec982"/><rect x="10" y="44" width="15" height="17" fill="#b7dfea"/><rect x="43" y="44" width="15" height="17" fill="#b7dfea"/><rect x="28" y="67" width="14" height="23" fill="#e6c36a"/></g><g fill="#4e9e66"><circle cx="48" cy="201" r="20"/><circle cx="69" cy="192" r="17"/><circle cx="390" cy="203" r="23"/><circle cx="414" cy="193" r="17"/></g><g transform="translate(210 169)"><circle cx="0" cy="0" r="9" fill="#d99577"/><path d="M-9 10H9l8 28h-34Z" fill="#6a9ec3"/><path d="m-8 37-4 25m21-25 7 25" stroke="#456a54" stroke-width="6" stroke-linecap="round"/></g><circle cx="370" cy="52" r="17" fill="#ffdf7a"/><g stroke="#e4bb45" stroke-width="3" stroke-linecap="round"><path d="M370 25v-7M370 86v-7M343 52h-7M404 52h-7M351 33l-5-5M394 76l-5-5M389 33l5-5M346 76l5-5"/></g></svg></div>
+    </div>
+    <div class="about-grid">
+      <div class="about-item"><div class="symbol">◎</div><h3>우리의 목표</h3><p>누구나 편하게 이용할 수 있는 지역 상점 정보를 쉽게 찾을 수 있도록 돕습니다.</p></div>
+      <div class="about-item"><div class="symbol">⌖</div><h3>사업 분야</h3><p>상점 지도, 접근성 정보, 이용 안내, 우수사례 소개와 지역 정보 공유.</p></div>
+      <div class="about-item"><div class="symbol">♡</div><h3>참여 방법</h3><p>상점 정보를 확인하고, 정확한 접근성 정보를 모아 더 편리한 지역 환경을 함께 만들어 갑니다.</p></div>
+    </div>
+  </section>
+
+  <!-- DETAIL -->
+  <section class="page" id="page-detail" aria-labelledby="detail-title">
+    <button class="secondary-btn" id="backFromDetail" style="margin-bottom:18px">← 목록으로 돌아가기</button>
+    <div class="detail-layout">
+      <div>
+        <div class="detail-gallery" id="detailGallery"></div>
+        <div class="content-card" style="margin-top:16px"><h2 style="color:var(--green-900);font-size:1.15rem">접근성 정보</h2><p style="color:var(--muted);font-size:.88rem">확인된 정보를 바탕으로 방문 전 필요한 항목을 확인해 주세요.</p><div class="feature-grid" id="detailFeatures"></div></div>
+      </div>
+      <div class="content-card">
+        <div class="detail-title-row"><h1 id="detail-title">상점 이름</h1><span class="tag">상점 정보</span></div>
+        <p class="detail-category" id="detailCategory"></p>
+        <p class="detail-desc" id="detailDescription"></p>
+        <div class="detail-actions"><button class="primary-btn" id="detailMapButton">지도에서 위치 보기 ↗</button><button class="secondary-btn" id="detailFavorite">♡ 즐겨찾기</button></div>
+        <div class="detail-tabs" role="tablist" aria-label="상점 상세 메뉴"><button class="detail-tab active" data-detail-tab="info" role="tab">상세정보</button><button class="detail-tab" data-detail-tab="space" role="tab">공간분석</button><button class="detail-tab" data-detail-tab="review" role="tab">이용자 의견</button></div>
+        <div class="tab-panel active" data-detail-panel="info"><dl class="info-list"><dt>주소</dt><dd id="detailAddress">주소 정보 확인 필요</dd><dt>업종</dt><dd id="detailType">-</dd><dt>조사 상태</dt><dd id="detailVerified">시안용 예시 데이터</dd><dt>방문 전 안내</dt><dd>필요한 접근성 항목을 상점에 다시 확인해 주세요.</dd></dl></div>
+        <div class="tab-panel" data-detail-panel="space"><h3 style="color:var(--green-900);margin-bottom:8px">공간분석 우수사례</h3><p>건축학과 참여자가 분석한 출입구, 동선, 공간 구성 등을 이 영역에 소개할 수 있어요.</p><div class="note-box">실제 현장 분석 자료가 준비되면 사진, 평면도, 3D 이미지와 설명으로 교체해 주세요.</div></div>
+        <div class="tab-panel" data-detail-panel="review"><h3 style="color:var(--green-900);margin-bottom:8px">이용자 접근성 의견</h3><p>후기 기능을 연결하면 방문자가 출입구와 이동 동선 등 이용에 도움이 되는 의견을 남길 수 있어요.</p><div class="note-box">현재 버전은 후기 데이터베이스를 연결하지 않았습니다. Google Forms 등의 주소를 설정한 뒤 버튼을 활성화할 수 있습니다.</div><button class="secondary-btn" id="feedbackButton" style="margin-top:12px">접근성 의견 남기기</button></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="footer-inner"><div><div class="footer-brand">⌂ 모두의마을</div><div>접근성이 좋은 상점을 발굴하고 소개합니다.</div></div><div>© 모두의마을 · 접근성 정보는 방문 전 다시 확인해 주세요.</div></div></footer>
+<nav class="mobile-bottom-nav" aria-label="모바일 주요 메뉴">
+  <button class="bottom-link active" data-route="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 10 12 3l9 7v10h-6v-6H9v6H3Z"/></svg>홈</button>
+  <button class="bottom-link" data-route="map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3Z"/><path d="M9 3v15m6-12v15"/></svg>지도</button>
+  <button class="bottom-link" data-route="stores"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 10h18l-2-6H5zM5 10v10h14V10M9 20v-6h6v6"/></svg>상점 찾기</button>
+  <button class="bottom-link" data-route="about"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg>소개</button>
+</nav>
+<div class="modal-backdrop" id="searchModal" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle"><div class="modal"><button class="modal-close" data-close-modal="searchModal" aria-label="닫기">✕</button><h2 id="searchModalTitle">상점 검색</h2><p>찾고 싶은 상점 이름을 입력해 주세요.</p><label class="search-box" style="width:100%"><span>⌕</span><input id="modalSearchInput" type="search" placeholder="예: 카페, 치과" /></label><div id="modalSearchResults" style="margin-top:16px"></div></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+/*
+  모두의마을 시안 웹사이트
+  - 간단한 수정: 아래 STORES 배열에서 상점 이름/업종/설명/접근성 정보 변경
+  - 실제 상점 사진: photo 속 URL을 본인 사진 경로(예: images/store1.jpg)로 변경
+  - 실제 지도: 각 상점 lat, lng를 조사한 정확한 좌표로 변경
+  - 이 파일은 데이터베이스가 없는 정적 데모입니다. 변경 사항은 이 파일을 수정해 GitHub에 다시 올리면 반영됩니다.
+*/
+const GOOGLE_FORM_URL = ""; // Google Forms를 사용하면 여기에 폼 주소를 붙여 넣으세요.
+const CATEGORIES = ["전체", "음식점", "카페", "병원·약국", "생활시설"];
+
+// 아래 위치와 사진은 화면 디자인을 위한 시안용 예시입니다. 실제 공개 전 반드시 조사 자료로 바꿔 주세요.
+const STORES = [
+  {id:"clinic-01", name:"죽전에스S치과", category:"병원·약국", type:"치과·진료", address:"주소 확인 후 입력해 주세요", lat:37.3236, lng:127.1088, distance:"0.3km", description:"출입구 단차가 없는 예시 정보입니다. 실제 공개 전 조사 기록을 확인해 주세요.", ramp:"단차 없음", door:"자동출입문", parking:"미확인", restroom:"미확인", accessibleRestroom:"미확인", status:"조사 정보 확인 필요", photo:"https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=900&q=80", icon:"✚", color:"#ed8c81", demoLocation:true},
+  {id:"cafe-01", name:"카페별날", category:"카페", type:"카페", address:"주소 확인 후 입력해 주세요", lat:37.3195, lng:127.1015, distance:"0.5km", description:"편안한 분위기의 카페를 소개하는 예시 카드입니다.", ramp:"미확인", door:"미확인", parking:"미확인", restroom:"미확인", accessibleRestroom:"미확인", status:"시안용 예시 데이터", photo:"https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=900&q=80", icon:"☕", color:"#f0a85c", demoLocation:true},
+  {id:"restaurant-01", name:"맛있는식당", category:"음식점", type:"한식·식사", address:"주소 확인 후 입력해 주세요", lat:37.3280, lng:127.0972, distance:"0.7km", description:"접근성 정보를 확인하고 방문할 수 있도록 소개하는 예시 상점입니다.", ramp:"미확인", door:"미확인", parking:"미확인", restroom:"미확인", accessibleRestroom:"미확인", status:"시안용 예시 데이터", photo:"https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=80", icon:"🍽", color:"#f5a18e", demoLocation:true},
+  {id:"pharmacy-01", name:"행복약국", category:"병원·약국", type:"약국", address:"주소 확인 후 입력해 주세요", lat:37.3165, lng:127.1127, distance:"0.8km", description:"약국의 접근성 정보를 한눈에 확인할 수 있는 예시 상점입니다.", ramp:"미확인", door:"미확인", parking:"미확인", restroom:"미확인", accessibleRestroom:"미확인", status:"시안용 예시 데이터", photo:"https://images.unsplash.com/photo-1603398938378-e54eab446dde?auto=format&fit=crop&w=900&q=80", icon:"＋", color:"#55a6d8", demoLocation:true},
+  {id:"clinic-02", name:"늘푸른의원", category:"병원·약국", type:"의원", address:"주소 확인 후 입력해 주세요", lat:37.3260, lng:127.1165, distance:"1.1km", description:"진료기관 정보를 모아 소개하기 위한 예시 상점입니다.", ramp:"미확인", door:"미확인", parking:"미확인", restroom:"미확인", accessibleRestroom:"미확인", status:"시안용 예시 데이터", photo:"https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=900&q=80", icon:"✚", color:"#5b9bd5", demoLocation:true},
+  {id:"market-01", name:"다정한마트", category:"생활시설", type:"생활용품·마트", address:"주소 확인 후 입력해 주세요", lat:37.3139, lng:127.1047, distance:"1.3km", description:"생활에 필요한 상점을 쉽게 찾도록 돕는 예시 상점입니다.", ramp:"미확인", door:"미확인", parking:"미확인", restroom:"미확인", accessibleRestroom:"미확인", status:"시안용 예시 데이터", photo:"https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=900&q=80", icon:"▤", color:"#58a77a", demoLocation:true},
+  {id:"pharmacy-02", name:"열린온누리약국", category:"병원·약국", type:"약국", address:"실제 주소 입력 필요", lat:37.3203, lng:127.0912, distance:"1.0km", description:"조사 결과에 맞춰 상세 정보를 보완해 주세요. 현재 좌표와 사진은 시안용입니다.", ramp:"설치", door:"자동출입문", parking:"미확인", restroom:"미확인", accessibleRestroom:"미확인", status:"조사 기록 기반 · 실제 주소 확인 필요", photo:"https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=900&q=80", icon:"＋", color:"#55a6d8", demoLocation:true},
+  {id:"cafe-02", name:"컴포즈커피", category:"카페", type:"커피전문점", address:"실제 주소 입력 필요", lat:37.3293, lng:127.1060, distance:"0.9km", description:"조사 기록에 맞춰 정보가 입력된 예시입니다. 현재 좌표와 사진은 시안용입니다.", ramp:"설치", door:"미설치", parking:"미확인", restroom:"미확인", accessibleRestroom:"미확인", status:"조사 기록 기반 · 실제 주소 확인 필요", photo:"https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=900&q=80", icon:"☕", color:"#f0a85c", demoLocation:true}
+];
+
+let currentRoute = "home";
+let currentStoreId = STORES[0].id;
+let currentCategory = "전체";
+let mapCategory = "전체";
+let leafletMap = null;
+let markerLayer = null;
+let toastTimer = null;
+let previousRoute = "stores";
+let searchModalReturnRoute = "home";
+let favorites = new Set();
+try { favorites = new Set(JSON.parse(localStorage.getItem("modu-village-favorites") || "[]")); } catch (_) {}
+
+const $ = (selector, root=document) => root.querySelector(selector);
+const $$ = (selector, root=document) => Array.from(root.querySelectorAll(selector));
+const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+const iconFor = category => ({"음식점":"🍽️","카페":"☕","병원·약국":"✚","생활시설":"▤"}[category] || "⌂");
+const statusLabel = value => value || "미확인";
+function showToast(message){const node=$("#toast");node.textContent=message;node.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.classList.remove("show"),2600)}
+function saveFavorites(){try{localStorage.setItem("modu-village-favorites",JSON.stringify([...favorites]));}catch(_){} }
+function storeById(id){return STORES.find(s=>s.id===id)||STORES[0]}
+function imageOrPlaceholder(store, className=""){
+  if(store.photo) return `<img class="${className}" src="${escapeHtml(store.photo)}" alt="${escapeHtml(store.name)} 사진 예시" loading="lazy" onerror="this.style.display='none';this.parentElement.querySelector('.photo-placeholder').style.display='flex'">`;
+  return "";
+}
+function photoSurface(store, variant="card"){
+  return `<div class="${variant==='row'?'store-thumb':'store-card-image'}">${imageOrPlaceholder(store)}<div class="photo-placeholder" style="display:${store.photo?'none':'flex'}"><span style="font-size:2rem">${iconFor(store.category)}</span><span>사진 준비 중</span></div></div>`;
+}
+function tagsFor(store, max=3){
+  const vals=[];
+  const features=[["ramp",store.ramp],["door",store.door],["parking",store.parking],["restroom",store.restroom],["accessibleRestroom",store.accessibleRestroom]];
+  const labels={ramp:"경사로·단차",door:"자동출입문",parking:"장애인 주차",restroom:"개방화장실",accessibleRestroom:"장애인화장실"};
+  for(const [key,val] of features){if(val && val!=="미확인" && val!=="미확인 정보") vals.push(`<span class="tag">${labels[key]} ${val}</span>`);}
+  if(!vals.length) vals.push('<span class="tag blue">접근성 정보 확인 중</span>');
+  return vals.slice(0,max).join("");
+}
+function storeCard(store){
+  return `<article class="store-card" tabindex="0" role="button" aria-label="${escapeHtml(store.name)} 상세정보 보기" data-store-id="${escapeHtml(store.id)}">
+    <div class="store-card-image">${imageOrPlaceholder(store)}<div class="photo-placeholder" style="display:${store.photo?'none':'flex'}"><span style="font-size:2rem">${iconFor(store.category)}</span><span>사진 준비 중</span></div><button class="favorite-btn ${favorites.has(store.id)?'saved':''}" data-favorite-id="${escapeHtml(store.id)}" aria-label="${favorites.has(store.id)?'즐겨찾기 해제':'즐겨찾기 추가'}">${favorites.has(store.id)?'♥':'♡'}</button></div>
+    <div class="store-card-body"><div class="store-card-top"><h3>${escapeHtml(store.name)}</h3><span class="distance">⌖ ${escapeHtml(store.distance||'위치 확인 필요')}</span></div><p class="store-desc">${escapeHtml(store.category)} · ${escapeHtml(store.type||store.category)}</p><div class="tags">${tagsFor(store,2)}</div></div>
+  </article>`;
+}
+function storeRow(store){
+  return `<button class="store-row" data-store-id="${escapeHtml(store.id)}" aria-label="${escapeHtml(store.name)} 상세정보 보기">
+    ${photoSurface(store,'row')}
+    <div class="store-info"><strong>${escapeHtml(store.name)}</strong><span class="category-line">${escapeHtml(store.category)} · ${escapeHtml(store.distance||'위치 확인 필요')}</span><div class="tags">${tagsFor(store,2)}</div></div>
+  </button>`;
+}
+function renderFilters(targetId,selected,handlerName){
+  const el=$("#"+targetId); if(!el)return;
+  el.innerHTML=CATEGORIES.map(c=>`<button class="filter-chip ${selected===c?'active':''}" data-category="${escapeHtml(c)}" data-filter-handler="${handlerName}">${escapeHtml(c)}</button>`).join("");
+}
+function renderHome(){const el=$("#homeStoreGrid");el.innerHTML=STORES.slice(0,3).map(storeCard).join("");}
+function getFilteredStores(category,query=""){
+  const q=query.trim().toLowerCase();
+  return STORES.filter(s=>(category==="전체"||s.category===category)&&(!q||`${s.name} ${s.category} ${s.type} ${s.description}`.toLowerCase().includes(q)));
+}
+function renderStoreGrid(){const list=getFilteredStores(currentCategory,$("#storeSearch").value);const el=$("#storeGrid");el.innerHTML=list.length?list.map(storeCard).join(""):`<div class="empty-state" style="grid-column:1/-1"><div class="big">⌕</div><strong>검색 결과가 없어요.</strong><p>다른 검색어나 업종을 선택해 보세요.</p></div>`;}
+function renderMapList(){let list=getFilteredStores(mapCategory);if($("#mapSort").value==="name")list=list.slice().sort((a,b)=>a.name.localeCompare(b.name,'ko'));$("#mapResultCount").textContent=`주변 상점 ${list.length}곳`;$("#mapStoreList").innerHTML=list.map(storeRow).join("")||'<div class="empty-state">해당 업종의 상점이 아직 없어요.</div>';}
+function ensureMap(){
+  if(typeof L==="undefined"){ $("#map").innerHTML='<div style="padding:40px 24px;text-align:center;color:#587463">지도를 불러오지 못했습니다.<br>인터넷 연결을 확인해 주세요.</div>';return; }
+  if(!leafletMap){
+    leafletMap=L.map('map',{scrollWheelZoom:false}).setView([37.3230,127.1050],14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(leafletMap);
+    markerLayer=L.layerGroup().addTo(leafletMap);
+  }
+  setTimeout(()=>leafletMap.invalidateSize(),100);
+  renderMarkers();
+}
+function renderMarkers(){
+  if(!leafletMap||!markerLayer)return;markerLayer.clearLayers();
+  const list=getFilteredStores(mapCategory);
+  list.forEach(store=>{
+    if(typeof store.lat!=="number"||typeof store.lng!=="number")return;
+    const pin=L.divIcon({className:'',html:`<div class="map-pin" style="background:${store.color||'#4d9868'}"><span>${escapeHtml(store.icon||iconFor(store.category))}</span></div>`,iconSize:[34,40],iconAnchor:[17,37],popupAnchor:[0,-35]});
+    const marker=L.marker([store.lat,store.lng],{icon:pin}).addTo(markerLayer);
+    marker.bindPopup(`<strong style="color:#164d36">${escapeHtml(store.name)}</strong><br><span style="color:#718176;font-size:12px">${escapeHtml(store.category)} · 시안용 위치</span><br><button onclick="openStore('${escapeHtml(store.id)}')" style="margin-top:8px;border:0;border-radius:20px;background:#1f5b3a;color:#fff;padding:7px 12px;font-weight:700;cursor:pointer">상세정보 보기 →</button>`);
+  });
+}
+function openStore(id){
+  const store=storeById(id);currentStoreId=store.id;previousRoute=(currentRoute==='detail'?previousRoute:currentRoute);renderDetail(store);navigate('detail');
+}
+function renderDetail(store){
+  $("#detail-title").textContent=store.name;$("#detailCategory").textContent=`${store.category} · ${store.type||store.category}`;$("#detailDescription").textContent=store.description||"상점 소개가 준비 중입니다.";
+  $("#detailAddress").textContent=store.address||"주소 정보 확인 필요";$("#detailType").textContent=store.category;$("#detailVerified").textContent=store.status||"확인 필요";
+  const pic=store.photo?`<img src="${escapeHtml(store.photo)}" alt="${escapeHtml(store.name)} 사진 예시" onerror="this.style.display='none'">`:'';
+  $("#detailGallery").innerHTML=`<div class="detail-main-photo">${pic}<div class="photo-placeholder" style="${store.photo?'display:none':''}"><span style="font-size:3rem">${iconFor(store.category)}</span><span>대표 사진 준비 중</span></div></div><div class="detail-small-photo"><span style="font-size:1.9rem">⌖</span><small>매장 주변</small></div><div class="detail-small-photo"><span style="font-size:1.9rem">♿</span><small>접근성 정보</small></div>`;
+  const featureData=[['↗','출입구 경사로',store.ramp],['⇥','자동출입문',store.door],['P','장애인 주차',store.parking],['WC','개방화장실',store.restroom],['♿','장애인화장실',store.accessibleRestroom]];
+  $("#detailFeatures").innerHTML=featureData.map(([icon,label,value])=>`<div class="feature"><div class="feature-icon">${icon}</div><strong>${label}</strong><small>${escapeHtml(statusLabel(value))}</small></div>`).join('');
+  $("#detailFavorite").innerHTML=(favorites.has(store.id)?'♥ 즐겨찾기 해제':'♡ 즐겨찾기');
+  $$("[data-detail-tab]").forEach((b,i)=>b.classList.toggle('active',i===0));$$("[data-detail-panel]").forEach((p,i)=>p.classList.toggle('active',i===0));
+}
+function navigate(route){
+  if(!["home","map","stores","guide","about","detail"].includes(route))route="home";
+  if(route!=="detail")previousRoute=route;currentRoute=route;
+  $$(".page").forEach(p=>p.classList.toggle('active',p.id===`page-${route}`));
+  $$("[data-route]").forEach(el=>{const active=el.dataset.route===route;el.classList.toggle('active',active);if(el.classList.contains('nav-link')){if(active)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');}});
+  $("#mainNav").classList.remove('open');$("#menuToggle").setAttribute('aria-expanded','false');
+  if(route==="map"){renderFilters('mapFilters',mapCategory,'map');renderMapList();ensureMap();}
+  if(route==="stores"){renderFilters('storeFilters',currentCategory,'stores');renderStoreGrid();}
+  if(route==="home")renderHome();
+  if(route==="detail")window.scrollTo({top:0,behavior:'smooth'});else window.scrollTo({top:0,behavior:'smooth'});
+  if(history.replaceState)history.replaceState(null,"",`#${route==='detail'?'store/'+currentStoreId:route}`);
+}
+function toggleFavorite(id){if(favorites.has(id)){favorites.delete(id);showToast('즐겨찾기에서 삭제했어요.')}else{favorites.add(id);showToast('즐겨찾기에 추가했어요.')}saveFavorites();renderHome();if(currentRoute==='stores')renderStoreGrid();if(currentRoute==='map')renderMapList();if(currentRoute==='detail')renderDetail(storeById(currentStoreId));}
+function openSearch(){searchModalReturnRoute=currentRoute;$("#searchModal").classList.add('open');$("#modalSearchInput").value=$("#storeSearch")?.value||'';renderModalSearch($("#modalSearchInput").value);setTimeout(()=>$("#modalSearchInput").focus(),50)}
+function closeModal(id){$("#"+id).classList.remove('open')}
+function renderModalSearch(query){const list=getFilteredStores('전체',query);$("#modalSearchResults").innerHTML=list.length?list.map(storeRow).join(''):'<div class="empty-state">검색 결과가 없어요.</div>';}
+
+// 전체 클릭 이벤트: 메뉴, 카드, 필터, 즐겨찾기를 한 곳에서 처리합니다.
+document.addEventListener('click',event=>{
+  const routeEl=event.target.closest('[data-route]');if(routeEl){event.preventDefault();navigate(routeEl.dataset.route);return;}
+  const filterEl=event.target.closest('[data-category]');if(filterEl){const which=filterEl.dataset.filterHandler; if(which==='map'){mapCategory=filterEl.dataset.category;renderFilters('mapFilters',mapCategory,'map');renderMapList();renderMarkers();}else{currentCategory=filterEl.dataset.category;renderFilters('storeFilters',currentCategory,'stores');renderStoreGrid();}return;}
+  const favEl=event.target.closest('[data-favorite-id]');if(favEl){event.stopPropagation();toggleFavorite(favEl.dataset.favoriteId);return;}
+  const storeEl=event.target.closest('[data-store-id]');if(storeEl){if($("#searchModal").classList.contains('open'))closeModal('searchModal');openStore(storeEl.dataset.storeId);return;}
+  const detailTab=event.target.closest('[data-detail-tab]');if(detailTab){const name=detailTab.dataset.detailTab;$$("[data-detail-tab]").forEach(b=>b.classList.toggle('active',b===detailTab));$$("[data-detail-panel]").forEach(p=>p.classList.toggle('active',p.dataset.detailPanel===name));return;}
+  const closeEl=event.target.closest('[data-close-modal]');if(closeEl){closeModal(closeEl.dataset.closeModal);return;}
+});
+$("#menuToggle").addEventListener('click',()=>{const nav=$("#mainNav");const open=nav.classList.toggle('open');$("#menuToggle").setAttribute('aria-expanded',String(open));});
+$("#headerSearch").addEventListener('click',openSearch);
+$("#favoritesButton").addEventListener('click',()=>{const list=STORES.filter(s=>favorites.has(s.id));if(!list.length){showToast('아직 즐겨찾기한 상점이 없어요.');return;}$("#modalSearchResults").innerHTML=list.map(storeRow).join('');$("#modalSearchInput").value='';$("#searchModalTitle").textContent='즐겨찾기한 상점';$("#searchModal").classList.add('open');});
+$("#modalSearchInput").addEventListener('input',e=>{$("#searchModalTitle").textContent='상점 검색';renderModalSearch(e.target.value)});
+$("#storeSearch").addEventListener('input',renderStoreGrid);
+$("#mapSort").addEventListener('change',renderMapList);
+$("#backFromDetail").addEventListener('click',()=>navigate(previousRoute==='detail'?'stores':previousRoute));
+$("#detailFavorite").addEventListener('click',()=>toggleFavorite(currentStoreId));
+$("#detailMapButton").addEventListener('click',()=>{const store=storeById(currentStoreId);navigate('map');setTimeout(()=>{if(leafletMap&&typeof store.lat==='number')leafletMap.setView([store.lat,store.lng],16);const marker=markerLayer&&markerLayer.getLayers().find(layer=>{const ll=layer.getLatLng();return Math.abs(ll.lat-store.lat)<0.00001&&Math.abs(ll.lng-store.lng)<0.00001});if(marker)marker.openPopup();},180)});
+$("#feedbackButton").addEventListener('click',()=>{if(GOOGLE_FORM_URL){window.open(GOOGLE_FORM_URL,'_blank','noopener,noreferrer')}else showToast('코드 안의 GOOGLE_FORM_URL에 Google Forms 주소를 입력해 주세요.');});
+$("#searchModal").addEventListener('click',e=>{if(e.target.id==='searchModal')closeModal('searchModal')});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){$$(".modal-backdrop.open").forEach(m=>m.classList.remove('open'));$("#mainNav").classList.remove('open');}if(e.key==='Enter'&&e.target.closest('.store-card'))openStore(e.target.closest('.store-card').dataset.storeId)});
+
+// 첫 화면 렌더링
+renderHome();renderFilters('mapFilters',mapCategory,'map');renderFilters('storeFilters',currentCategory,'stores');
+// 주소창에 #map 등 해시가 있으면 해당 페이지를 표시합니다.
+const initialHash=decodeURIComponent(location.hash.replace(/^#/,''));
+if(initialHash.startsWith('store/')){const id=initialHash.slice(6);openStore(id)}else if(["home","map","stores","guide","about"].includes(initialHash)){navigate(initialHash)}
+</script>
+</body>
+</html>
